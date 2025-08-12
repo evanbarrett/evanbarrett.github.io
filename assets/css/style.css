@@ -1,15 +1,33 @@
 .profile-section {
-    display: flex;             /* Arrange image and text side-by-side */
-    align-items: center;       /* Vertically align text with image */
-    gap: 20px;                 /* Space between image and text */
+  display: flex;           /* Place image and right content side-by-side */
+  gap: 30px;               /* Space between image and the text/nav column */
+  align-items: flex-start; /* Align top edges */
 }
 
 .profile-img img {
-    max-width: 300px;
-    height: auto;
-    border-radius: 8px;        /* Optional: rounded corners */
+  max-width: 300px;
+  height: auto;
+  border-radius: 8px;      /* Optional: rounded corners */
+}
+
+.profile-info-nav {
+  display: flex;
+  flex-direction: column;  /* Stack profile info on top of navigation */
+  justify-content: flex-start;
 }
 
 .profile-info {
-    font-family: 'Open Sans', sans-serif;
+  margin-bottom: 20px;     /* Space between profile info and navigation */
+}
+
+.nav-links a {
+  display: block;
+  margin-bottom: 8px;
+  text-decoration: none;
+  color: #0366d6;
+  font-weight: 600;
+}
+
+.nav-links a:hover {
+  text-decoration: underline;
 }
