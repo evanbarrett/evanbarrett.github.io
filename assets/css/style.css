@@ -24,6 +24,7 @@
   display: block;
   margin-bottom: 2px;
   text-decoration: none;
+  padding: 0;
   color: #0366d6;
   font-weight: 600;
 }
