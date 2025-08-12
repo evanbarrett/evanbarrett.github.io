@@ -1,0 +1,15 @@
+.profile-section {
+    display: flex;             /* Arrange image and text side-by-side */
+    align-items: center;       /* Vertically align text with image */
+    gap: 20px;                 /* Space between image and text */
+}
+
+.profile-img img {
+    max-width: 300px;
+    height: auto;
+    border-radius: 8px;        /* Optional: rounded corners */
+}
+
+.profile-info {
+    font-family: 'Open Sans', sans-serif;
+}
