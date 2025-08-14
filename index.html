@@ -10,152 +10,91 @@
 </head>
 
 
-<div id="snowflake-sim">
+<!-- Minimal Weather.gov Widget -->
+<div id="weather-widget">
   <div id="toolbar">
-    <button id="clear">Clear</button>
-    <button id="unfold">Unfold</button>
+    <input type="text" id="zip" placeholder="Enter ZIP" maxlength="5" />
+    <button id="getWeather">Get Weather</button>
   </div>
-  <canvas id="snowflake-canvas" width="350" height="350"></canvas>
+  <div id="weather-display">
+    <p id="location"></p>
+    <p id="temp"></p>
+    <p id="desc"></p>
+  </div>
 </div>
 
 <style>
-  #snowflake-sim {
+  #weather-widget {
     position: fixed;
     top: 10px;
     right: 10px;
     width: 350px;
     height: 350px;
-    background: #fff;
+    background: #f0f4f8;
     border: 2px solid #ccc;
     border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     font-family: sans-serif;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    overflow: auto;
   }
   #toolbar {
     display: flex;
-    justify-content: space-around;
-    background: #f8f8f8;
-    border-bottom: 1px solid #ccc;
-    padding: 4px;
+    justify-content: space-between;
+    margin-bottom: 10px;
   }
-  #toolbar button {
-    background: none;
-    border: 1px solid #aaa;
-    padding: 4px 8px;
-    font-size: 12px;
+  #zip {
+    flex: 1;
+    padding: 5px;
+    font-size: 14px;
+  }
+  #getWeather {
+    padding: 5px 8px;
+    margin-left: 5px;
     cursor: pointer;
     border-radius: 4px;
+    border: 1px solid #aaa;
+    background: #fff;
   }
-  #toolbar button:hover {
+  #getWeather:hover {
     background: #eee;
+  }
+  #weather-display p {
+    margin: 5px 0;
+    font-size: 16px;
   }
 </style>
 
 <script>
-const canvas = document.getElementById('snowflake-canvas');
-const ctx = canvas.getContext('2d');
-const width = canvas.width;
-const height = canvas.height;
+async function getWeather() {
+  const zip = document.getElementById('zip').value;
+  if(!zip) return alert("Enter a ZIP code");
 
-let drawing = false;
-let unfolded = false;
+  try {
+    // Step 1: Get lat/lon from weather.gov API using ZIP
+    const geoRes = await fetch(`https://api.weather.gov/points/${zip}`);
+    if(!geoRes.ok) throw new Error("Invalid ZIP code or location not found");
+    const geoData = await geoRes.json();
+    const forecastUrl = geoData.properties.forecast;
 
-// Offscreen canvas for wedge
-const wedgeCanvas = document.createElement('canvas');
-wedgeCanvas.width = width;
-wedgeCanvas.height = height;
-const wedgeCtx = wedgeCanvas.getContext('2d');
-wedgeCtx.fillStyle = '#fff';
-wedgeCtx.fillRect(0,0,width,height);
+    // Step 2: Get forecast
+    const forecastRes = await fetch(forecastUrl);
+    if(!forecastRes.ok) throw new Error("Forecast not available");
+    const forecastData = await forecastRes.json();
+    const period = forecastData.properties.periods[0]; // current period
 
-// Triangle wedge points (centered)
-const cx = width/2, cy = height/2;
-const radius = 150;
-const angle = Math.PI/6; // 30 degrees for half of wedge
-
-// Draw triangular clipping mask
-function drawWedgeMask() {
-  ctx.clearRect(0,0,width,height);
-  ctx.save();
-  ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(cx + radius * Math.sin(angle), cy - radius * Math.cos(angle));
-  ctx.lineTo(cx - radius * Math.sin(angle), cy - radius * Math.cos(angle));
-  ctx.closePath();
-  ctx.clip();
-  ctx.drawImage(wedgeCanvas, 0, 0);
-  ctx.restore();
-}
-
-// Drawing functions
-function startDraw(e){ if(unfolded) return; drawing=true; draw(e);}
-function stopDraw(){ drawing=false; }
-function draw(e){
-  if(!drawing || unfolded) return;
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
-  // Only draw if inside wedge triangle
-  if(pointInTriangle({x,y}, {x:cx,y:cy}, 
-                      {x:cx + radius*Math.sin(angle), y:cy - radius*Math.cos(angle)}, 
-                      {x:cx - radius*Math.sin(angle), y:cy - radius*Math.cos(angle)})){
-    wedgeCtx.fillStyle = '#000';
-    wedgeCtx.beginPath();
-    wedgeCtx.arc(x,y,3,0,Math.PI*2);
-    wedgeCtx.fill();
-    drawWedgeMask();
+    document.getElementById('location').textContent = geoData.properties.relativeLocation.properties.city + ", " + geoData.properties.relativeLocation.properties.state;
+    document.getElementById('temp').textContent = `${period.temperature}°${period.temperatureUnit}`;
+    document.getElementById('desc').textContent = period.shortForecast;
+  } catch(err) {
+    console.error(err);
+    alert("Error fetching weather: " + err.message);
   }
 }
 
-// Point in triangle test
-function pointInTriangle(p, p0, p1, p2){
-  const A = 1/2 *(-p1.y*p2.x + p0.y*(-p1.x + p2.x) + p0.x*(p1.y - p2.y) + p1.x*p2.y);
-  const sign = A<0?-1:1;
-  const s = (p0.y*p2.x - p0.x*p2.y + (p2.y - p0.y)*p.x + (p0.x - p2.x)*p.y)*sign;
-  const t = (p0.x*p1.y - p0.y*p1.x + (p0.y - p1.y)*p.x + (p1.x - p0.x)*p.y)*sign;
-  return s>=0 && t>=0 && (s+t)<=2*A*sign;
-}
-
-// Unfold function
-function unfold(){
-  unfolded=true;
-  ctx.clearRect(0,0,width,height);
-  ctx.save();
-  ctx.translate(cx,cy);
-  for(let i=0;i<6;i++){
-    ctx.rotate(Math.PI/3);
-    // draw wedge
-    ctx.drawImage(wedgeCanvas, -cx, -cy);
-    // draw mirrored wedge
-    ctx.save();
-    ctx.scale(1,-1);
-    ctx.drawImage(wedgeCanvas, -cx, -cy);
-    ctx.restore();
-  }
-  ctx.restore();
-}
-
-// Clear function
-function clearCanvas(){
-  unfolded=false;
-  wedgeCtx.fillStyle='#fff';
-  wedgeCtx.fillRect(0,0,width,height);
-  drawWedgeMask();
-}
-
-// Event listeners
-canvas.addEventListener('mousedown', startDraw);
-canvas.addEventListener('mouseup', stopDraw);
-canvas.addEventListener('mouseout', stopDraw);
-canvas.addEventListener('mousemove', draw);
-
-document.getElementById('clear').addEventListener('click', clearCanvas);
-document.getElementById('unfold').addEventListener('click', unfold);
-
-// Initial display
-drawWedgeMask();
+document.getElementById('getWeather').addEventListener('click', getWeather);
 </script>
+
     
 <body>
     <div class="container">
@@ -228,6 +167,7 @@ drawWedgeMask();
     </div>
 </body>
 </html>
+
 
 
 
