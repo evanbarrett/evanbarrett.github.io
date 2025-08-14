@@ -8,93 +8,6 @@
     <!-- You can add Google Fonts here -->
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&family=Source+Sans+Pro:wght@300;400;600&display=swap" rel="stylesheet">
 </head>
-
-
-<!-- Minimal Weather.gov Widget -->
-<div id="weather-widget">
-  <div id="toolbar">
-    <input type="text" id="zip" placeholder="Enter ZIP" maxlength="5" />
-    <button id="getWeather">Get Weather</button>
-  </div>
-  <div id="weather-display">
-    <p id="location"></p>
-    <p id="temp"></p>
-    <p id="desc"></p>
-  </div>
-</div>
-
-<style>
-  #weather-widget {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    width: 350px;
-    height: 350px;
-    background: #f0f4f8;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    font-family: sans-serif;
-    padding: 10px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    overflow: auto;
-  }
-  #toolbar {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  #zip {
-    flex: 1;
-    padding: 5px;
-    font-size: 14px;
-  }
-  #getWeather {
-    padding: 5px 8px;
-    margin-left: 5px;
-    cursor: pointer;
-    border-radius: 4px;
-    border: 1px solid #aaa;
-    background: #fff;
-  }
-  #getWeather:hover {
-    background: #eee;
-  }
-  #weather-display p {
-    margin: 5px 0;
-    font-size: 16px;
-  }
-</style>
-
-<script>
-async function getWeather() {
-  const zip = document.getElementById('zip').value;
-  if(!zip) return alert("Enter a ZIP code");
-
-  try {
-    // Step 1: Get lat/lon from weather.gov API using ZIP
-    const geoRes = await fetch(`https://api.weather.gov/points/${zip}`);
-    if(!geoRes.ok) throw new Error("Invalid ZIP code or location not found");
-    const geoData = await geoRes.json();
-    const forecastUrl = geoData.properties.forecast;
-
-    // Step 2: Get forecast
-    const forecastRes = await fetch(forecastUrl);
-    if(!forecastRes.ok) throw new Error("Forecast not available");
-    const forecastData = await forecastRes.json();
-    const period = forecastData.properties.periods[0]; // current period
-
-    document.getElementById('location').textContent = geoData.properties.relativeLocation.properties.city + ", " + geoData.properties.relativeLocation.properties.state;
-    document.getElementById('temp').textContent = `${period.temperature}°${period.temperatureUnit}`;
-    document.getElementById('desc').textContent = period.shortForecast;
-  } catch(err) {
-    console.error(err);
-    alert("Error fetching weather: " + err.message);
-  }
-}
-
-document.getElementById('getWeather').addEventListener('click', getWeather);
-</script>
-
     
 <body>
     <div class="container">
@@ -167,6 +80,7 @@ document.getElementById('getWeather').addEventListener('click', getWeather);
     </div>
 </body>
 </html>
+
 
 
 
