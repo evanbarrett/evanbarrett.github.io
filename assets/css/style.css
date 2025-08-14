@@ -5,7 +5,7 @@
 }
 
 .profile-img img {
-  max-width: 300px;
+  max-width: 400px;
   height: auto;
   border-radius: 8px;      /* Optional: rounded corners */
 }
