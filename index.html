@@ -10,12 +10,10 @@
 </head>
 
 
-<!-- Paper Snowflake Simulator -->
 <div id="snowflake-sim">
   <div id="toolbar">
     <button id="clear">Clear</button>
     <button id="unfold">Unfold</button>
-    <button id="download">Download</button>
   </div>
   <canvas id="snowflake-canvas" width="350" height="350"></canvas>
 </div>
@@ -63,64 +61,76 @@ const height = canvas.height;
 let drawing = false;
 let unfolded = false;
 
-// Offscreen canvas to store the wedge cut
+// Offscreen canvas for wedge
 const wedgeCanvas = document.createElement('canvas');
 wedgeCanvas.width = width;
 wedgeCanvas.height = height;
 const wedgeCtx = wedgeCanvas.getContext('2d');
-
-// Setup: white paper background
-wedgeCtx.fillStyle = 'white';
+wedgeCtx.fillStyle = '#fff';
 wedgeCtx.fillRect(0,0,width,height);
 
-// Draw triangular wedge mask
+// Triangle wedge points (centered)
+const cx = width/2, cy = height/2;
+const radius = 150;
+const angle = Math.PI/6; // 30 degrees for half of wedge
+
+// Draw triangular clipping mask
 function drawWedgeMask() {
   ctx.clearRect(0,0,width,height);
   ctx.save();
-  ctx.translate(width/2, height/2);
   ctx.beginPath();
-  ctx.moveTo(0,0);
-  ctx.lineTo(0,-height/2);
-  const angle = Math.PI / 3; // 60deg wedge
-  ctx.lineTo(height/2*Math.tan(angle), -height/2);
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx + radius * Math.sin(angle), cy - radius * Math.cos(angle));
+  ctx.lineTo(cx - radius * Math.sin(angle), cy - radius * Math.cos(angle));
   ctx.closePath();
   ctx.clip();
-  ctx.drawImage(wedgeCanvas, -width/2, -height/2);
+  ctx.drawImage(wedgeCanvas, 0, 0);
   ctx.restore();
 }
 
-function startDraw(e) {
-  if(unfolded) return;
-  drawing = true;
-  draw(e);
-}
-function stopDraw() { drawing = false; }
-function draw(e) {
+// Drawing functions
+function startDraw(e){ if(unfolded) return; drawing=true; draw(e);}
+function stopDraw(){ drawing=false; }
+function draw(e){
   if(!drawing || unfolded) return;
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = e.clientY - rect.top;
-  wedgeCtx.fillStyle = 'black';
-  wedgeCtx.beginPath();
-  wedgeCtx.arc(x,y,3,0,Math.PI*2);
-  wedgeCtx.fill();
-  drawWedgeMask();
+  // Only draw if inside wedge triangle
+  if(pointInTriangle({x,y}, {x:cx,y:cy}, 
+                      {x:cx + radius*Math.sin(angle), y:cy - radius*Math.cos(angle)}, 
+                      {x:cx - radius*Math.sin(angle), y:cy - radius*Math.cos(angle)})){
+    wedgeCtx.fillStyle = '#000';
+    wedgeCtx.beginPath();
+    wedgeCtx.arc(x,y,3,0,Math.PI*2);
+    wedgeCtx.fill();
+    drawWedgeMask();
+  }
+}
+
+// Point in triangle test
+function pointInTriangle(p, p0, p1, p2){
+  const A = 1/2 *(-p1.y*p2.x + p0.y*(-p1.x + p2.x) + p0.x*(p1.y - p2.y) + p1.x*p2.y);
+  const sign = A<0?-1:1;
+  const s = (p0.y*p2.x - p0.x*p2.y + (p2.y - p0.y)*p.x + (p0.x - p2.x)*p.y)*sign;
+  const t = (p0.x*p1.y - p0.y*p1.x + (p0.y - p1.y)*p.x + (p1.x - p0.x)*p.y)*sign;
+  return s>=0 && t>=0 && (s+t)<=2*A*sign;
 }
 
 // Unfold function
-function unfold() {
-  unfolded = true;
+function unfold(){
+  unfolded=true;
   ctx.clearRect(0,0,width,height);
   ctx.save();
-  ctx.translate(width/2,height/2);
+  ctx.translate(cx,cy);
   for(let i=0;i<6;i++){
     ctx.rotate(Math.PI/3);
-    // draw original wedge
-    ctx.drawImage(wedgeCanvas, -width/2, -height/2);
+    // draw wedge
+    ctx.drawImage(wedgeCanvas, -cx, -cy);
     // draw mirrored wedge
     ctx.save();
     ctx.scale(1,-1);
-    ctx.drawImage(wedgeCanvas, -width/2, -height/2);
+    ctx.drawImage(wedgeCanvas, -cx, -cy);
     ctx.restore();
   }
   ctx.restore();
@@ -128,18 +138,10 @@ function unfold() {
 
 // Clear function
 function clearCanvas(){
-  unfolded = false;
-  wedgeCtx.fillStyle = 'white';
+  unfolded=false;
+  wedgeCtx.fillStyle='#fff';
   wedgeCtx.fillRect(0,0,width,height);
   drawWedgeMask();
-}
-
-// Download function
-function downloadCanvas(){
-  const link = document.createElement('a');
-  link.download = 'snowflake.png';
-  link.href = canvas.toDataURL();
-  link.click();
 }
 
 // Event listeners
@@ -150,14 +152,10 @@ canvas.addEventListener('mousemove', draw);
 
 document.getElementById('clear').addEventListener('click', clearCanvas);
 document.getElementById('unfold').addEventListener('click', unfold);
-document.getElementById('download').addEventListener('click', downloadCanvas);
 
-// Initial wedge display
+// Initial display
 drawWedgeMask();
 </script>
-
-
-
     
 <body>
     <div class="container">
@@ -230,6 +228,7 @@ drawWedgeMask();
     </div>
 </body>
 </html>
+
 
 
 
